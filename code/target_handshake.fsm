@@ -1,0 +1,62 @@
+`timescale 1ns / 1ps
+module handshake_fsm_target
+(
+input logic req_sync,
+output logic start,
+input logic clk_mem,
+input logic rst_mem,
+input logic done,
+output logic ack 
+ );
+ 
+ typedef enum logic [1:0]{
+ IDLE=2'b00,
+ WAIT_MEM=2'b01,
+ REQ_DROP=2'b10
+ }
+ state_t;
+ state_t state;
+ 
+ always_ff @(posedge clk_mem)
+ begin
+ if(rst_mem)
+ begin
+ start<=0;
+ state<=IDLE;
+ ack<=0;
+ end
+ else
+ begin
+ case(state)
+      IDLE:
+        begin
+          if(req_sync)
+            begin
+            start<=1'b1;
+            state<=WAIT_MEM;
+            end
+         end
+         
+      WAIT_MEM:
+       begin
+       start<=0;
+         if(done)
+         begin
+         ack<=1'b1;
+         state<=REQ_DROP;
+         end
+        end
+        
+       REQ_DROP:
+        begin
+        if(!req_sync)
+        begin
+        ack<=0;
+        state<=IDLE;
+        end
+          end
+       default: state<=IDLE;
+ endcase
+ end
+ end
+endmodule
